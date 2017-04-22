@@ -20,3 +20,9 @@ print "teste"
 for i in range(len(l_df)):
 	print len(l_df[i][1].d.unique())
 	print "\n"
+
+#print grouped_df[1][1]
+#print grouped_df[2][1]['PHONEID']
+#df_phone.append(grouped_df[0][1])
+#df_phone.append(grouped_df[1][1])
+#print df_phone[0]
