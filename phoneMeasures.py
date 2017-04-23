@@ -22,10 +22,35 @@ def create_phone_df(df,grouped_df):
 		else:
 			df_phone.append([])
 
-	print df_phone[1]
+	return df_phone, list_phones
 #---------------------------------------------------------------------------------------------------------------
 
+def undersampling(df_phone, phones_used):
+
+	minimum = 10000000
+	und_df_phone = []
+
+	for i in phones_used:
+		
+		#find the smaller data frame
+		if(len(df_phone[i]) < minimum):
+			minimum = len(df_phone[i])
+			ind_min = i
+
+	#unsampling the others data frames so they are the same size		
+	for i in phones_used:
+		if(i != ind_min):
+			und_df_phone.append(df_phone[i].sample(n=minimum))
+		else:
+			und_df_phone.append(df_phone[i])	
+
+	return und_df_phone	
+
+#---------------------------------------------------------------------------------------------------------------
 def main():
+
+	phones_used = [6,7,13,14]
+
 	#convert csv file in an data frame
 	df = pd.read_csv('trainingData.csv')
 
@@ -33,6 +58,12 @@ def main():
 	grouped_df = list(df.groupby(['PHONEID']))
 
 	show_number_measurements(grouped_df)
+
+	#create a data frame for each phone
+	df_phone, list_phones = create_phone_df(df,grouped_df)
+	
+
+	und_df_phone = undersampling(df_phone,phones_used)
 
 
 if __name__ == "__main__":
