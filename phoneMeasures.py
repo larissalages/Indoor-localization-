@@ -1,6 +1,7 @@
 
 import pandas as pd
 import csv
+import numpy as np
 
 #Calculate how many measurements each cell phone has
 def show_number_measurements(grouped_df):
@@ -47,9 +48,39 @@ def undersampling(df_phone, phones_used):
 	return und_df_phone	
 
 #---------------------------------------------------------------------------------------------------------------
+def shuffle(und_df_phone):
+
+	for i in range(len(und_df_phone)):
+		und_df_phone[i] = und_df_phone[i].sample(frac=1)
+
+	return und_df_phone	 
+
+#---------------------------------------------------------------------------------------------------------------
+def KFold(k, und_df_phone):
+
+	und_df_phone = shuffle(und_df_phone)
+	phone = []
+	
+	#split the data frame of each smartphone
+	for j in range(len(und_df_phone)): 
+		phone.append(np.array_split(und_df_phone[j],k))
+
+	for i in range(k):
+
+		
+
+
+		#Join the train set	
+		#Training KNN, with total training set
+		#To Do a loop to test each smartphone		
+
+	print phone[1][0]
+#---------------------------------------------------------------------------------------------------------------
 def main():
 
+	#defines
 	phones_used = [6,7,13,14]
+	k=10
 
 	#convert csv file in an data frame
 	df = pd.read_csv('trainingData.csv')
@@ -62,8 +93,11 @@ def main():
 	#create a data frame for each phone
 	df_phone, list_phones = create_phone_df(df,grouped_df)
 	
-
+	#Doing undersampling
 	und_df_phone = undersampling(df_phone,phones_used)
+
+	KFold(k, und_df_phone)
+
 
 
 if __name__ == "__main__":
