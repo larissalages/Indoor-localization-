@@ -63,18 +63,27 @@ def KFold(k, und_df_phone):
 	
 	#split the data frame of each smartphone
 	for j in range(len(und_df_phone)): 
-		phone.append(np.array_split(und_df_phone[j],k))
+		phone.append(np.array_split(und_df_phone[j],k)) #the first dimension of phone is each phone, the second is the splits data frames from that smatphone
 
 	for i in range(k):
+		#separate each smartphone's data frame in test and train
+		test = [] #list of data frames
+		train =pd.DataFrame()		
+		for j in range(len(und_df_phone)):
+			test.append(phone[j][i])
+			#Join the train set
+			for x in range(k):
+				if x != i:
+					train = pd.concat([train,phone[j][x]])	
+		print len(train)				
 
-		
 
-
-		#Join the train set	
+	
 		#Training KNN, with total training set
 		#To Do a loop to test each smartphone		
 
-	print phone[1][0]
+
+
 #---------------------------------------------------------------------------------------------------------------
 def main():
 
