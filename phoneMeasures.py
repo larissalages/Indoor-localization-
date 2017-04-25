@@ -2,6 +2,7 @@
 import pandas as pd
 import csv
 import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
 
 #Calculate how many measurements each cell phone has
 def show_number_measurements(grouped_df):
@@ -56,6 +57,13 @@ def shuffle(und_df_phone):
 	return und_df_phone	 
 
 #---------------------------------------------------------------------------------------------------------------
+def init_list_of_objects(size):
+    list_of_objects = list()
+    for i in range(0,size):
+        list_of_objects.append( list() ) #different object reference each time
+    return list_of_objects
+
+#---------------------------------------------------------------------------------------------------------------
 def KFold(k, und_df_phone):
 
 	und_df_phone = shuffle(und_df_phone)
@@ -65,6 +73,9 @@ def KFold(k, und_df_phone):
 	for j in range(len(und_df_phone)): 
 		phone.append(np.array_split(und_df_phone[j],k)) #the first dimension of phone is each phone, the second is the splits data frames from that smatphone
 
+	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
+
+	hit_rate = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
 	for i in range(k):
 		#separate each smartphone's data frame in test and train
 		test = [] #list of data frames
@@ -75,12 +86,23 @@ def KFold(k, und_df_phone):
 			for x in range(k):
 				if x != i:
 					train = pd.concat([train,phone[j][x]])	
-		print len(train)				
-
-
+		
+		#Training KNN, with total training set				
+		data_train = train.ix[:,0:519]
+		target_train = train['BUILDINGID']
 	
-		#Training KNN, with total training set
-		#To Do a loop to test each smartphone		
+		
+		#test all phones
+		for j in range(len(und_df_phone)):
+			#only pick up from test set the phone that you will be evaluated
+			data_test = test[j].ix[:,0:519] 
+			target_test = test[j]['BUILDINGID']	
+
+			#knn		
+			knn.fit(data_train,target_train)
+			hit_rate[j].append(knn.score(data_test , target_test))
+
+	print np.mean(hit_rate[3])	
 
 
 
@@ -97,7 +119,7 @@ def main():
 	#group by pohneID
 	grouped_df = list(df.groupby(['PHONEID']))
 
-	show_number_measurements(grouped_df)
+	#show_number_measurements(grouped_df)
 
 	#create a data frame for each phone
 	df_phone, list_phones = create_phone_df(df,grouped_df)
