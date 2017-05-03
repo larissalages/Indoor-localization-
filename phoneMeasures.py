@@ -64,6 +64,37 @@ def init_list_of_objects(size):
     return list_of_objects
 
 #---------------------------------------------------------------------------------------------------------------
+def floor_classifier(predictions,train,test): #TODO: TESTAR
+	
+	scores_floor = []
+
+	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
+
+	for i in range(3):
+		
+		new_train = train.loc[train['BUILDINGID'] == i] #select for training only buildings with that label (0,1, or 2)
+		indexes = [x for x in range(len(predictions)) if predictions[x]==i] #get the position of the samples that have building == i
+		
+		if (indexes): #if list is not empty
+			#training, samples with building == i 
+			X_train = new_train.ix[:,0:519]
+			Y_train = new_train['FLOOR']
+			knn.fit(X_train,Y_train)
+			
+			#testing samples with prediction building == i
+			new_test = test.iloc[indexes,:]
+			X_test = new_test.ix[:,0:519] 
+			Y_test = new_test['FLOOR']
+			
+			#knn.score(X_test , Y_test)
+			scores_floor.append(knn.score(X_test , Y_test))
+	 
+
+	print np.mean(scores_floor)
+	print " next"
+	return np.mean(scores_floor)		
+
+#---------------------------------------------------------------------------------------------------------------
 def KFold(k, und_df_phone):
 
 	und_df_phone = shuffle(und_df_phone)
@@ -75,7 +106,9 @@ def KFold(k, und_df_phone):
 
 	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
 
-	hit_rate = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
+	hit_rate_build = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
+	
+
 	for i in range(k):
 		#separate each smartphone's data frame in test and train
 		test = [] #list of data frames
@@ -90,7 +123,8 @@ def KFold(k, und_df_phone):
 		#Training KNN, with total training set				
 		data_train = train.ix[:,0:519]
 		target_train = train['BUILDINGID']
-	
+		#knn - training		
+		knn.fit(data_train,target_train)
 		
 		#test all phones
 		for j in range(len(und_df_phone)):
@@ -98,11 +132,16 @@ def KFold(k, und_df_phone):
 			data_test = test[j].ix[:,0:519] 
 			target_test = test[j]['BUILDINGID']	
 
-			#knn		
-			knn.fit(data_train,target_train)
-			hit_rate[j].append(knn.score(data_test , target_test))
+			#predictions and scores for each smartphone
+			predictions = knn.predict(data_test) 
+			hit_rate_build[j].append(knn.score(data_test , target_test)) 
+			
+			floor_classifier(predictions,train,test[j])
+			#hit_rate_floor[j].append( floor_classifier(predictions,data_train,train['FLOOR'],data_test,test[j]['FLOOR'],len(und_df_phone)) )
+			predictions = []  
 
-	print np.mean(hit_rate[3])	
+			
+	print np.mean(hit_rate_build[3])	
 
 
 
