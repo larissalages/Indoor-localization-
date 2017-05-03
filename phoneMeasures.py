@@ -70,6 +70,7 @@ def floor_classifier(predictions,train,test): #TODO: TESTAR
 
 	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
 
+	#for each building
 	for i in range(3):
 		
 		new_train = train.loc[train['BUILDINGID'] == i] #select for training only buildings with that label (0,1, or 2)
@@ -85,13 +86,11 @@ def floor_classifier(predictions,train,test): #TODO: TESTAR
 			new_test = test.iloc[indexes,:]
 			X_test = new_test.ix[:,0:519] 
 			Y_test = new_test['FLOOR']
+
 			
-			#knn.score(X_test , Y_test)
 			scores_floor.append(knn.score(X_test , Y_test))
 	 
-
-	print np.mean(scores_floor)
-	print " next"
+	
 	return np.mean(scores_floor)		
 
 #---------------------------------------------------------------------------------------------------------------
@@ -107,7 +106,7 @@ def KFold(k, und_df_phone):
 	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
 
 	hit_rate_build = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
-	
+	hit_rate_floor = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
 
 	for i in range(k):
 		#separate each smartphone's data frame in test and train
@@ -133,15 +132,18 @@ def KFold(k, und_df_phone):
 			target_test = test[j]['BUILDINGID']	
 
 			#predictions and scores for each smartphone
-			predictions = knn.predict(data_test) 
+			predictions = knn.predict(data_test)
+			#classification for building 
 			hit_rate_build[j].append(knn.score(data_test , target_test)) 
-			
-			floor_classifier(predictions,train,test[j])
-			#hit_rate_floor[j].append( floor_classifier(predictions,data_train,train['FLOOR'],data_test,test[j]['FLOOR'],len(und_df_phone)) )
+			#classification for floor
+			hit_rate_floor[j].append( floor_classifier(predictions,train,test[j]) )
 			predictions = []  
 
 			
-	print np.mean(hit_rate_build[3])	
+	print np.mean(hit_rate_floor[0])
+	print np.mean(hit_rate_floor[1])
+	print np.mean(hit_rate_floor[2])
+	print np.mean(hit_rate_floor[3])	
 
 
 
