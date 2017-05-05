@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neighbors import KNeighborsRegressor
 from geopy.distance import vincenty
+from pyproj import Proj
 
 from math import radians, cos, sin, asin, sqrt
 
@@ -117,7 +118,8 @@ def floor_classifier(predictions,train,test):
 
 def regression_subset(predictions,train,test): #implementar
 	
-	erros = []
+	
+	mean_error = []
 
 	knn = KNeighborsRegressor(n_neighbors=5, weights = 'distance')
 
@@ -139,29 +141,38 @@ def regression_subset(predictions,train,test): #implementar
 			X_test = new_test.ix[:,0:519] 
 			Y_test = new_test[['LONGITUDE','LATITUDE']]
 
-			predicts_lat_lon = knn.predict(X_test)
+			#Turn into list
+			predicts_lon_lat = knn.predict(X_test).tolist()
 			Y_test = Y_test.values.tolist()
+
+			distance = []
+			for j in range(len(predicts_lon_lat)):
+
+				#change the latitude and longitude unit
+				myProj = Proj("+proj=utm +zone=23K, +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+				lon_pred,lat_pred = myProj(predicts_lon_lat[j][0], predicts_lon_lat[j][1], inverse=True)
+				lon_Y, lat_Y = myProj(Y_test[j][0], Y_test[j][1], inverse=True)
 			
-			
-			newport_ri = Y_test[0]
-			cleveland_oh = predicts_lat_lon[0]
-			print(vincenty(newport_ri, cleveland_oh).meters)
-			print " "
+				#join in a unique list
+				Y = []
+				Y.append(lon_Y)
+				Y.append(lat_Y)
+				predict = []
+				predict.append(lon_pred)
+				predict.append(lat_pred)			
 
-			from geopy.distance import great_circle
+				distance.append(vincenty(Y, predict).meters)
+				#print haversine(lon_Y, lat_Y, lon_pred, lat_pred)
 
-			print(great_circle(newport_ri, cleveland_oh).meters)
+			mean_error.append(np.mean(distance))	
+			#print(np.mean(distance))
+		
+	#print np.mean(mean_error)
+	#print " "	
+	return np.mean(mean_error)
 
-			1/0
-			#print difference
-"""			
-			scores_floor.append(knn.score(X_test , Y_test))
-	 
-	
-	return np.mean(scores_floor)		
-"""
 #---------------------------------------------------------------------------------------------------------------
-def regression_allset(train,test,knn_reg,knn2):
+def regression_allset(train,test,knn_reg,knn2): #Only for tests
 
 	X_train = train.ix[:,0:519]
 	Y_train1 = train['LONGITUDE']
@@ -198,14 +209,7 @@ def regression_allset(train,test,knn_reg,knn2):
 	predict.append(lat_pred)
 
 	print(vincenty(predict, Y).meters)
-	#Y_test = Y_test.values.tolist()
-	#print Y_test[0]
-	#newport_ri = Y_test[0]
-	#cleveland_oh = predicts_lat_lon[0]
-	#print newport_ri
-	#print cleveland_oh
-	#from geopy.distance import great_circle
-	#print(great_circle(newport_ri, cleveland_oh).meters)
+
 	1/0
 
 #---------------------------------------------------------------------------------------------------------------
@@ -216,14 +220,15 @@ def KFold(k, und_df_phone):
 	
 	#split the data frame of each smartphone
 	for j in range(len(und_df_phone)): 
-		phone.append(np.array_split(und_df_phone[j],k)) #the first dimension of phone is each phone, the second is the splits data frames from that smatphone
+		phone.append(np.array_split(und_df_phone[j],k)) #the first dimension of "phone" is each phone, the second is the splits data frames from that smatphone
 
 	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
-	knn_reg = KNeighborsRegressor(n_neighbors=5, weights = 'distance')
-	knn2= KNeighborsRegressor(n_neighbors=5, weights = 'distance')
+	#knn_reg = KNeighborsRegressor(n_neighbors=5, weights = 'distance')
 
 	hit_rate_build = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
 	hit_rate_floor = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
+	mean_error = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
+
 
 	for i in range(k):
 		#separate each smartphone's data frame in test and train
@@ -255,16 +260,20 @@ def KFold(k, und_df_phone):
 			#classification for floor
 			hit_rate_floor[j].append( floor_classifier(predictions,train,test[j]) )
 			#regression to found latitude and longitude
-			regression_allset(train,test[j],knn_reg,knn2)
+			mean_error[j].append(regression_subset(predictions,train,test[j]))
 			predictions = []  
 
-			
+	print "hit rate for floor"		
 	print np.mean(hit_rate_floor[0])
 	print np.mean(hit_rate_floor[1])
 	print np.mean(hit_rate_floor[2])
 	print np.mean(hit_rate_floor[3])	
 
-
+	print "mean error regression"
+	print np.mean(mean_error[0])
+	print np.mean(mean_error[1])
+	print np.mean(mean_error[2])
+	print np.mean(mean_error[3])
 
 #---------------------------------------------------------------------------------------------------------------
 def main():
