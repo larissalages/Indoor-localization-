@@ -3,7 +3,27 @@ import pandas as pd
 import csv
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsRegressor
+from geopy.distance import vincenty
 
+from math import radians, cos, sin, asin, sqrt
+
+def haversine(lon1, lat1, lon2, lat2):
+    """
+    Calculate the great circle distance between two points 
+    on the earth (specified in decimal degrees)
+    """
+    # convert decimal degrees to radians 
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+
+    # haversine formula 
+    dlon = lon2 - lon1 
+    dlat = lat2 - lat1 
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a)) 
+    r = 6371 # Radius of earth in kilometers. Use 3956 for miles
+    return c * r *1000 #return in meters
+#--------------------------------------------------------------------------------------------------------------
 #Calculate how many measurements each cell phone has
 def show_number_measurements(grouped_df):
 	for i in range(len(grouped_df)):
@@ -64,7 +84,7 @@ def init_list_of_objects(size):
     return list_of_objects
 
 #---------------------------------------------------------------------------------------------------------------
-def floor_classifier(predictions,train,test): #TODO: TESTAR
+def floor_classifier(predictions,train,test):
 	
 	scores_floor = []
 
@@ -94,6 +114,101 @@ def floor_classifier(predictions,train,test): #TODO: TESTAR
 	return np.mean(scores_floor)		
 
 #---------------------------------------------------------------------------------------------------------------
+
+def regression_subset(predictions,train,test): #implementar
+	
+	erros = []
+
+	knn = KNeighborsRegressor(n_neighbors=5, weights = 'distance')
+
+	#for each building
+	for i in range(3):
+		
+		new_train = train.loc[train['BUILDINGID'] == i] #select for training only buildings with that label (0,1, or 2)
+		indexes = [x for x in range(len(predictions)) if predictions[x]==i] #get the position of the samples that have building == i
+
+		
+		if (indexes): #if list is not empty
+			#training, samples with building == i 
+			X_train = new_train.ix[:,0:519]
+			Y_train = new_train[['LONGITUDE','LATITUDE']]
+			knn.fit(X_train,Y_train)
+		
+			#testing samples with prediction building == i
+			new_test = test.iloc[indexes,:]
+			X_test = new_test.ix[:,0:519] 
+			Y_test = new_test[['LONGITUDE','LATITUDE']]
+
+			predicts_lat_lon = knn.predict(X_test)
+			Y_test = Y_test.values.tolist()
+			
+			
+			newport_ri = Y_test[0]
+			cleveland_oh = predicts_lat_lon[0]
+			print(vincenty(newport_ri, cleveland_oh).meters)
+			print " "
+
+			from geopy.distance import great_circle
+
+			print(great_circle(newport_ri, cleveland_oh).meters)
+
+			1/0
+			#print difference
+"""			
+			scores_floor.append(knn.score(X_test , Y_test))
+	 
+	
+	return np.mean(scores_floor)		
+"""
+#---------------------------------------------------------------------------------------------------------------
+def regression_allset(train,test,knn_reg,knn2):
+
+	X_train = train.ix[:,0:519]
+	Y_train1 = train['LONGITUDE']
+	Y_train2 = train['LATITUDE']
+	knn_reg.fit(X_train,Y_train1)
+	knn2.fit(X_train,Y_train2)
+		
+	X_test = test.ix[:,0:519] 
+	Y_test1 = test['LONGITUDE']
+	Y_test2 = test['LATITUDE']
+
+	pred_lon = knn_reg.predict(X_test)
+	pred_lat = knn2.predict(X_test)
+
+
+	
+	Y_test1 = Y_test1.values.tolist()
+	Y_test2 = Y_test2.values.tolist()
+
+	
+	#print haversine(Y_test1[0], Y_test2[0], pred_lon[0], pred_lat[0])
+
+	from pyproj import Proj
+	myProj = Proj("+proj=utm +zone=23K, +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+	lon_Y, lat_Y = myProj(Y_test1[0], Y_test2[0], inverse=True)
+	lon_pred,lat_pred = myProj(pred_lon[0], pred_lat[0], inverse=True)
+
+	print haversine(lon_Y, lat_Y, lon_pred, lat_pred)
+	Y = []
+	Y.append(lon_Y)
+	Y.append(lat_Y)
+	predict = []
+	predict.append(lon_pred)
+	predict.append(lat_pred)
+
+	print(vincenty(predict, Y).meters)
+	#Y_test = Y_test.values.tolist()
+	#print Y_test[0]
+	#newport_ri = Y_test[0]
+	#cleveland_oh = predicts_lat_lon[0]
+	#print newport_ri
+	#print cleveland_oh
+	#from geopy.distance import great_circle
+	#print(great_circle(newport_ri, cleveland_oh).meters)
+	1/0
+
+#---------------------------------------------------------------------------------------------------------------
 def KFold(k, und_df_phone):
 
 	und_df_phone = shuffle(und_df_phone)
@@ -104,6 +219,8 @@ def KFold(k, und_df_phone):
 		phone.append(np.array_split(und_df_phone[j],k)) #the first dimension of phone is each phone, the second is the splits data frames from that smatphone
 
 	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
+	knn_reg = KNeighborsRegressor(n_neighbors=5, weights = 'distance')
+	knn2= KNeighborsRegressor(n_neighbors=5, weights = 'distance')
 
 	hit_rate_build = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
 	hit_rate_floor = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
@@ -137,6 +254,8 @@ def KFold(k, und_df_phone):
 			hit_rate_build[j].append(knn.score(data_test , target_test)) 
 			#classification for floor
 			hit_rate_floor[j].append( floor_classifier(predictions,train,test[j]) )
+			#regression to found latitude and longitude
+			regression_allset(train,test[j],knn_reg,knn2)
 			predictions = []  
 
 			
