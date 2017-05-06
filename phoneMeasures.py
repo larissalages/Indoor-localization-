@@ -116,7 +116,7 @@ def floor_classifier(predictions,train,test):
 
 #---------------------------------------------------------------------------------------------------------------
 
-def regression_subset(predictions,train,test): #implementar
+def regression_subset(predictions,train,test): 
 	
 	
 	mean_error = []
