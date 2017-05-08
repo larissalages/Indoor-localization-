@@ -4,9 +4,9 @@ import csv
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.neural_network import MLPClassifier
 from geopy.distance import vincenty
 from pyproj import Proj
-
 from math import radians, cos, sin, asin, sqrt
 
 def haversine(lon1, lat1, lon2, lat2):
@@ -223,12 +223,14 @@ def KFold(k, und_df_phone):
 		phone.append(np.array_split(und_df_phone[j],k)) #the first dimension of "phone" is each phone, the second is the splits data frames from that smatphone
 
 	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
+	mlp = MLPClassifier(solver='sgd',learning_rate = 'invscaling',verbose='true',activation='tanh')
 	#knn_reg = KNeighborsRegressor(n_neighbors=5, weights = 'distance')
 
-	hit_rate_build = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
-	hit_rate_floor = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
-	mean_error = init_list_of_objects(len(und_df_phone)) #creating a empty list with size len(und_df_phone)
-
+	#creating a empty list with size len(und_df_phone)
+	hit_rate_build_knn = init_list_of_objects(len(und_df_phone)) 
+	hit_rate_floor_knn = init_list_of_objects(len(und_df_phone))
+	hit_rate_build_mlp = init_list_of_objects(len(und_df_phone)) 
+	mean_error = init_list_of_objects(len(und_df_phone)) 
 
 	for i in range(k):
 		#separate each smartphone's data frame in test and train
@@ -246,7 +248,8 @@ def KFold(k, und_df_phone):
 		target_train = train['BUILDINGID']
 		#knn - training		
 		knn.fit(data_train,target_train)
-		
+		mlp.fit(data_train, target_train)
+
 		#test all phones
 		for j in range(len(und_df_phone)):
 			#only pick up from test set the phone that you will be evaluated
@@ -254,27 +257,34 @@ def KFold(k, und_df_phone):
 			target_test = test[j]['BUILDINGID']	
 
 			#predictions and scores for each smartphone
-			predictions = knn.predict(data_test)
+			predictions_knn = knn.predict(data_test)
 			#classification for building 
-			hit_rate_build[j].append(knn.score(data_test , target_test)) 
+			hit_rate_build_knn[j].append(knn.score(data_test , target_test))
+			hit_rate_build_mlp[j].append(mlp.score(data_test , target_test)) 
 			#classification for floor
-			hit_rate_floor[j].append( floor_classifier(predictions,train,test[j]) )
+			hit_rate_floor_knn[j].append( floor_classifier(predictions_knn,train,test[j]) )
 			#regression to found latitude and longitude
-			mean_error[j].append(regression_subset(predictions,train,test[j]))
-			predictions = []  
+			mean_error[j].append(regression_subset(predictions_knn,train,test[j]))
+			predictions_knn = []  
 
-	print "hit rate for floor"		
-	print np.mean(hit_rate_floor[0])
-	print np.mean(hit_rate_floor[1])
-	print np.mean(hit_rate_floor[2])
-	print np.mean(hit_rate_floor[3])	
+	print "hit rate for floor knn"		
+	print np.mean(hit_rate_floor_knn[0])
+	print np.mean(hit_rate_floor_knn[1])
+	print np.mean(hit_rate_floor_knn[2])
+	print np.mean(hit_rate_floor_knn[3])
+	print " "	
 
-	print "mean error regression"
+	print "mean error regression knn"
 	print np.mean(mean_error[0])
 	print np.mean(mean_error[1])
 	print np.mean(mean_error[2])
 	print np.mean(mean_error[3])
+	print " "
 
+	print np.mean(hit_rate_build_mlp[0])
+	print np.mean(hit_rate_build_mlp[1])
+	print np.mean(hit_rate_build_mlp[2])
+	print np.mean(hit_rate_build_mlp[3])
 #---------------------------------------------------------------------------------------------------------------
 def main():
 
