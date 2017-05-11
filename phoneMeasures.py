@@ -85,11 +85,16 @@ def init_list_of_objects(size):
     return list_of_objects
 
 #---------------------------------------------------------------------------------------------------------------
-def floor_classifier(predictions,train,test):
+def floor_classifier(predictions,train,test,method):
 	
 	scores_floor = []
 
-	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
+	if(method==1):
+		machine_learn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
+	if(method==2):
+		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5)		
+		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=400) #THE BEST
+		machine_learn = MLPClassifier(hidden_layer_sizes=(100,5), solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=500)
 
 	#for each building
 	for i in range(3):
@@ -101,7 +106,7 @@ def floor_classifier(predictions,train,test):
 			#training, samples with building == i 
 			X_train = new_train.ix[:,0:519]
 			Y_train = new_train['FLOOR']
-			knn.fit(X_train,Y_train)
+			machine_learn.fit(X_train,Y_train)
 			
 			#testing samples with prediction building == i
 			new_test = test.iloc[indexes,:]
@@ -109,7 +114,7 @@ def floor_classifier(predictions,train,test):
 			Y_test = new_test['FLOOR']
 
 			
-			scores_floor.append(knn.score(X_test , Y_test))
+			scores_floor.append(machine_learn.score(X_test , Y_test))
 	 
 	
 	return np.mean(scores_floor)		
@@ -187,7 +192,6 @@ def regression_allset(train,test,knn_reg,knn2): #Only for tests
 	pred_lon = knn_reg.predict(X_test)
 	pred_lat = knn2.predict(X_test)
 
-
 	
 	Y_test1 = Y_test1.values.tolist()
 	Y_test2 = Y_test2.values.tolist()
@@ -229,7 +233,8 @@ def KFold(k, und_df_phone):
 	#creating a empty list with size len(und_df_phone)
 	hit_rate_build_knn = init_list_of_objects(len(und_df_phone)) 
 	hit_rate_floor_knn = init_list_of_objects(len(und_df_phone))
-	hit_rate_build_mlp = init_list_of_objects(len(und_df_phone)) 
+	hit_rate_build_mlp = init_list_of_objects(len(und_df_phone))
+	hit_rate_floor_mlp = init_list_of_objects(len(und_df_phone)) 
 	mean_error = init_list_of_objects(len(und_df_phone)) 
 
 	for i in range(k):
@@ -258,11 +263,13 @@ def KFold(k, und_df_phone):
 
 			#predictions and scores for each smartphone
 			predictions_knn = knn.predict(data_test)
+			predictions_mlp = mlp.predict(data_test)
 			#classification for building 
 			hit_rate_build_knn[j].append(knn.score(data_test , target_test))
 			hit_rate_build_mlp[j].append(mlp.score(data_test , target_test)) 
 			#classification for floor
-			hit_rate_floor_knn[j].append( floor_classifier(predictions_knn,train,test[j]) )
+			hit_rate_floor_knn[j].append( floor_classifier(predictions_knn,train,test[j],1) )
+			hit_rate_floor_mlp[j].append( floor_classifier(predictions_mlp,train,test[j],2) )
 			#regression to found latitude and longitude
 			mean_error[j].append(regression_subset(predictions_knn,train,test[j]))
 			predictions_knn = []  
@@ -281,10 +288,10 @@ def KFold(k, und_df_phone):
 	print np.mean(mean_error[3])
 	print " "
 
-	print np.mean(hit_rate_build_mlp[0])
-	print np.mean(hit_rate_build_mlp[1])
-	print np.mean(hit_rate_build_mlp[2])
-	print np.mean(hit_rate_build_mlp[3])
+	print np.mean(hit_rate_floor_mlp[0])
+	print np.mean(hit_rate_floor_mlp[1])
+	print np.mean(hit_rate_floor_mlp[2])
+	print np.mean(hit_rate_floor_mlp[3])
 #---------------------------------------------------------------------------------------------------------------
 def main():
 
