@@ -8,6 +8,7 @@ from sklearn.neural_network import MLPClassifier
 from geopy.distance import vincenty
 from pyproj import Proj
 from math import radians, cos, sin, asin, sqrt
+from sklearn.model_selection import GridSearchCV
 
 def haversine(lon1, lat1, lon2, lat2):
     """
@@ -94,7 +95,11 @@ def floor_classifier(predictions,train,test,method):
 	if(method==2):
 		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5)		
 		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=400) #THE BEST
-		machine_learn = MLPClassifier(hidden_layer_sizes=(100,5), solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=500)
+		#machine_learn = MLPClassifier(hidden_layer_sizes=(100,5), solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=500)
+		model = MLPClassifier()
+		solvers = ['lbfgs', 'sgd', 'adam']
+		activations = ['identity', 'logistic', 'tanh', 'relu']
+		machine_learn = GridSearchCV(estimator=model, param_grid=dict(solver=solvers,activation =activations)) #GRID
 
 	#for each building
 	for i in range(3):
