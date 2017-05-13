@@ -93,13 +93,11 @@ def floor_classifier(predictions,train,test,method):
 	if(method==1):
 		machine_learn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
 	if(method==2):
-		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5)		
 		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=400) #THE BEST
-		#machine_learn = MLPClassifier(hidden_layer_sizes=(100,5), solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=500)
-		model = MLPClassifier()
-		solvers = ['lbfgs', 'sgd', 'adam']
+		model = MLPClassifier(solver= 'sgd', learning_rate = 'adaptive')
+		#solvers = ['lbfgs', 'sgd', 'adam']
 		activations = ['identity', 'logistic', 'tanh', 'relu']
-		machine_learn = GridSearchCV(estimator=model, param_grid=dict(solver=solvers,activation =activations)) #GRID
+		machine_learn = GridSearchCV(estimator=model, param_grid=dict(activation =activations),n_jobs =10) #GRID
 
 	#for each building
 	for i in range(3):
@@ -118,7 +116,6 @@ def floor_classifier(predictions,train,test,method):
 			X_test = new_test.ix[:,0:519] 
 			Y_test = new_test['FLOOR']
 
-			
 			scores_floor.append(machine_learn.score(X_test , Y_test))
 	 
 	
@@ -222,6 +219,22 @@ def regression_allset(train,test,knn_reg,knn2): #Only for tests
 	1/0
 
 #---------------------------------------------------------------------------------------------------------------
+def save_vec(hit_rate_build_mlp,hit_rate_floor_mlp,hit_rate_build_knn, hit_rate_floor_knn):
+
+	np.save("build_mlp.npy",hit_rate_build_mlp)
+	np.save("floor_mlp.npy",hit_rate_floor_mlp)
+
+	np.save("build_knn.npy",hit_rate_build_knn)
+	np.save("floor_knn.npy",hit_rate_floor_knn)
+#---------------------------------------------------------------------------------------------------------------
+def load_vec():
+	hit_rate_build_mlp = np.load("build_mlp.npy")
+	hit_rate_floor_mlp = np.load("floor_mlp.npy")
+
+	hit_rate_build_knn = np.load("build_knn.npy")
+	hit_rate_floor_knn = np.load("floor_knn.npy")
+
+#---------------------------------------------------------------------------------------------------------------
 def KFold(k, und_df_phone):
 
 	und_df_phone = shuffle(und_df_phone)
@@ -279,6 +292,7 @@ def KFold(k, und_df_phone):
 			mean_error[j].append(regression_subset(predictions_knn,train,test[j]))
 			predictions_knn = []  
 
+	save_vec(hit_rate_build_mlp,hit_rate_floor_mlp,hit_rate_build_knn, hit_rate_floor_knn)		
 	print "hit rate for floor knn"		
 	print np.mean(hit_rate_floor_knn[0])
 	print np.mean(hit_rate_floor_knn[1])
