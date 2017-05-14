@@ -153,6 +153,7 @@ def floor_classifier(predictions,train,test,method):
 		#max_its = [200,400,600]
 		#machine_learn = GridSearchCV(estimator=model, param_grid=dict(activation =activations,max_iter=max_its),n_jobs=7) #GRID
 
+
 	#for each building
 	for i in range(3):
 		
@@ -168,6 +169,7 @@ def floor_classifier(predictions,train,test,method):
 			#testing samples w ith prediction building == i
 			new_test = test.iloc[indexes,:]
 			X_test = new_test.ix[:,0:519] 
+
 			Y_test_floor = new_test['FLOOR']
 			Y_test_build = new_test['BUILDINGID']
 			#if(method ==2):
@@ -238,6 +240,23 @@ def regression_subset(predictions,train,test):
 
 #---------------------------------------------------------------------------------------------------------------
 
+def save_vec(hit_rate_build_mlp,hit_rate_floor_mlp,hit_rate_build_knn, hit_rate_floor_knn):
+
+	np.save("build_mlp.npy",hit_rate_build_mlp)
+	np.save("floor_mlp.npy",hit_rate_floor_mlp)
+
+	np.save("build_knn.npy",hit_rate_build_knn)
+	np.save("floor_knn.npy",hit_rate_floor_knn)
+#---------------------------------------------------------------------------------------------------------------
+def load_vec():
+	hit_rate_build_mlp = np.load("build_mlp.npy")
+	hit_rate_floor_mlp = np.load("floor_mlp.npy")
+
+	hit_rate_build_knn = np.load("build_knn.npy")
+	hit_rate_floor_knn = np.load("floor_knn.npy")
+
+#---------------------------------------------------------------------------------------------------------------
+
 def KFold(k, und_df_phone):
 
 	und_df_phone = shuffle(und_df_phone)
@@ -295,6 +314,7 @@ def KFold(k, und_df_phone):
 			mean_error[j].append(regression_subset(predictions_knn,train,test[j]))
 			predictions_knn = []  
 
+	save_vec(hit_rate_build_mlp,hit_rate_floor_mlp,hit_rate_build_knn, hit_rate_floor_knn)		
 	print "hit rate for floor knn"		
 	print np.mean(hit_rate_floor_knn[0])
 	print np.mean(hit_rate_floor_knn[1])
