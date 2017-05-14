@@ -10,6 +10,7 @@ from pyproj import Proj
 from math import radians, cos, sin, asin, sqrt
 from sklearn.model_selection import GridSearchCV
 
+
 def haversine(lon1, lat1, lon2, lat2):
     """
     Calculate the great circle distance between two points 
@@ -25,6 +26,46 @@ def haversine(lon1, lat1, lon2, lat2):
     c = 2 * asin(sqrt(a)) 
     r = 6371 # Radius of earth in kilometers. Use 3956 for miles
     return c * r *1000 #return in meters
+#---------------------------------------------------------------------------------------------------------------      
+def regression_allset(train,test,knn_reg,knn2): #Only for tests
+
+	X_train = train.ix[:,0:519]
+	Y_train1 = train['LONGITUDE']
+	Y_train2 = train['LATITUDE']
+	knn_reg.fit(X_train,Y_train1)
+	knn2.fit(X_train,Y_train2)
+		
+	X_test = test.ix[:,0:519] 
+	Y_test1 = test['LONGITUDE']
+	Y_test2 = test['LATITUDE']
+
+	pred_lon = knn_reg.predict(X_test)
+	pred_lat = knn2.predict(X_test)
+
+	
+	Y_test1 = Y_test1.values.tolist()
+	Y_test2 = Y_test2.values.tolist()
+
+	
+	#print haversine(Y_test1[0], Y_test2[0], pred_lon[0], pred_lat[0])
+
+	from pyproj import Proj
+	myProj = Proj("+proj=utm +zone=23K, +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+	lon_Y, lat_Y = myProj(Y_test1[0], Y_test2[0], inverse=True)
+	lon_pred,lat_pred = myProj(pred_lon[0], pred_lat[0], inverse=True)
+
+	print haversine(lon_Y, lat_Y, lon_pred, lat_pred)
+	Y = []
+	Y.append(lon_Y)
+	Y.append(lat_Y)
+	predict = []
+	predict.append(lon_pred)
+	predict.append(lat_pred)
+
+	print(vincenty(predict, Y).meters)
+
+	1/0
+  
 #--------------------------------------------------------------------------------------------------------------
 #Calculate how many measurements each cell phone has
 def show_number_measurements(grouped_df):
@@ -84,22 +125,33 @@ def init_list_of_objects(size):
     for i in range(0,size):
         list_of_objects.append( list() ) #different object reference each time
     return list_of_objects
+#---------------------------------------------------------------------------------------------------------------
+#return the number of hits
+def compare(Y_test_build, predictions_build, Y_test_floor, predictions_floor):
 
+	hits = 0
+	#if tests and predictions have the same number of building and the same number of floor, the algorithm hit
+	for i in range(len(Y_test_floor)):
+		if(Y_test_build[i] == predictions_build[i] and Y_test_floor[i] == predictions_floor[i]):
+			hits = hits +1
+
+	return hits
 #---------------------------------------------------------------------------------------------------------------
 def floor_classifier(predictions,train,test,method):
-	
-	scores_floor = []
+		
+	successful_amount = 0
 
 	if(method==1):
 		machine_learn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
 	if(method==2):
 		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5)		
-		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=400) #THE BEST
+		machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='false',activation='tanh',alpha=1e-5,max_iter=400) #THE BEST
 		#machine_learn = MLPClassifier(hidden_layer_sizes=(100,5), solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=500)
-		model = MLPClassifier()
-		solvers = ['lbfgs', 'sgd', 'adam']
-		activations = ['identity', 'logistic', 'tanh', 'relu']
-		machine_learn = GridSearchCV(estimator=model, param_grid=dict(solver=solvers,activation =activations)) #GRID
+		#model = MLPClassifier(solver = 'adam',learning_rate = 'adaptive')
+		#solvers = ['lbfgs', 'sgd', 'adam']
+		#activations = ['identity', 'logistic', 'tanh', 'relu']
+		#max_its = [200,400,600]
+		#machine_learn = GridSearchCV(estimator=model, param_grid=dict(activation =activations,max_iter=max_its),n_jobs=7) #GRID
 
 	#for each building
 	for i in range(3):
@@ -111,18 +163,21 @@ def floor_classifier(predictions,train,test,method):
 			#training, samples with building == i 
 			X_train = new_train.ix[:,0:519]
 			Y_train = new_train['FLOOR']
-			machine_learn.fit(X_train,Y_train)
+			machine_learn.fit(X_train,Y_train)                                   
 			
-			#testing samples with prediction building == i
+			#testing samples w ith prediction building == i
 			new_test = test.iloc[indexes,:]
 			X_test = new_test.ix[:,0:519] 
-			Y_test = new_test['FLOOR']
-
-			
-			scores_floor.append(machine_learn.score(X_test , Y_test))
-	 
+			Y_test_floor = new_test['FLOOR']
+			Y_test_build = new_test['BUILDINGID']
+			#if(method ==2):
+				#print "best score:"
+				#print machine_learn.best_score_
+			predictions_floor = machine_learn.predict(X_test)
+			#Accumulate the number of hits 
+			successful_amount = compare(Y_test_build.tolist(), predictions[indexes].tolist(), Y_test_floor.tolist(), predictions_floor.tolist()) + successful_amount
 	
-	return np.mean(scores_floor)		
+	return successful_amount/float(len(test))		
 
 #---------------------------------------------------------------------------------------------------------------
 
@@ -182,46 +237,7 @@ def regression_subset(predictions,train,test):
 	return np.mean(mean_error)
 
 #---------------------------------------------------------------------------------------------------------------
-def regression_allset(train,test,knn_reg,knn2): #Only for tests
 
-	X_train = train.ix[:,0:519]
-	Y_train1 = train['LONGITUDE']
-	Y_train2 = train['LATITUDE']
-	knn_reg.fit(X_train,Y_train1)
-	knn2.fit(X_train,Y_train2)
-		
-	X_test = test.ix[:,0:519] 
-	Y_test1 = test['LONGITUDE']
-	Y_test2 = test['LATITUDE']
-
-	pred_lon = knn_reg.predict(X_test)
-	pred_lat = knn2.predict(X_test)
-
-	
-	Y_test1 = Y_test1.values.tolist()
-	Y_test2 = Y_test2.values.tolist()
-
-	
-	#print haversine(Y_test1[0], Y_test2[0], pred_lon[0], pred_lat[0])
-
-	from pyproj import Proj
-	myProj = Proj("+proj=utm +zone=23K, +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
-	lon_Y, lat_Y = myProj(Y_test1[0], Y_test2[0], inverse=True)
-	lon_pred,lat_pred = myProj(pred_lon[0], pred_lat[0], inverse=True)
-
-	print haversine(lon_Y, lat_Y, lon_pred, lat_pred)
-	Y = []
-	Y.append(lon_Y)
-	Y.append(lat_Y)
-	predict = []
-	predict.append(lon_pred)
-	predict.append(lat_pred)
-
-	print(vincenty(predict, Y).meters)
-
-	1/0
-
-#---------------------------------------------------------------------------------------------------------------
 def KFold(k, und_df_phone):
 
 	und_df_phone = shuffle(und_df_phone)
@@ -266,7 +282,7 @@ def KFold(k, und_df_phone):
 			data_test = test[j].ix[:,0:519] 
 			target_test = test[j]['BUILDINGID']	
 
-			#predictions and scores for each smartphone
+			#predictions and scores for each smartphone (predictions about building)
 			predictions_knn = knn.predict(data_test)
 			predictions_mlp = mlp.predict(data_test)
 			#classification for building 
@@ -293,10 +309,12 @@ def KFold(k, und_df_phone):
 	print np.mean(mean_error[3])
 	print " "
 
+	print "hit rate for floor MLP"
 	print np.mean(hit_rate_floor_mlp[0])
 	print np.mean(hit_rate_floor_mlp[1])
 	print np.mean(hit_rate_floor_mlp[2])
 	print np.mean(hit_rate_floor_mlp[3])
+	
 #---------------------------------------------------------------------------------------------------------------
 def main():
 
