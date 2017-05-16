@@ -147,7 +147,7 @@ def floor_classifier(predictions,train,test,method):
 		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5)		
 		machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='false',activation='tanh',alpha=1e-5,max_iter=400) #THE BEST
 		#machine_learn = MLPClassifier(hidden_layer_sizes=(100,5), solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=500)
-		#model = MLPClassifier(solver = 'adam',learning_rate = 'adaptive')
+		#model = MLPClassifier(learning_rate = 'adaptive')
 		#solvers = ['lbfgs', 'sgd', 'adam']
 		#activations = ['identity', 'logistic', 'tanh', 'relu']
 		#max_its = [200,400,600]
@@ -228,14 +228,14 @@ def regression_subset(predictions,train,test):
 				predict.append(lon_pred)
 				predict.append(lat_pred)			
 
+				#The distance between the two latitudes is the error
 				distance.append(vincenty(Y, predict).meters)
+				#If you want to use haversine distance, uncomment the line below
 				#print haversine(lon_Y, lat_Y, lon_pred, lat_pred)
 
 			mean_error.append(np.mean(distance))	
 			#print(np.mean(distance))
 		
-	#print np.mean(mean_error)
-	#print " "	
 	return np.mean(mean_error)
 
 #---------------------------------------------------------------------------------------------------------------
@@ -316,25 +316,25 @@ def KFold(k, und_df_phone):
 
 	save_vec(hit_rate_build_mlp,hit_rate_floor_mlp,hit_rate_build_knn, hit_rate_floor_knn)		
 	print "hit rate for floor knn"		
-	print np.mean(hit_rate_floor_knn[0])
-	print np.mean(hit_rate_floor_knn[1])
-	print np.mean(hit_rate_floor_knn[2])
-	print np.mean(hit_rate_floor_knn[3])
+	print str(np.mean(hit_rate_floor_knn[0])) + " - " + str(np.std(hit_rate_floor_knn[0]))
+	print str(np.mean(hit_rate_floor_knn[1])) + " - " + str(np.std(hit_rate_floor_knn[1]))
+	print str(np.mean(hit_rate_floor_knn[2])) + " - " + str(np.std(hit_rate_floor_knn[2]))
+	print str(np.mean(hit_rate_floor_knn[3])) + " - " + str(np.std(hit_rate_floor_knn[3]))
 	print " "	
 
 	print "mean error regression knn"
-	print np.mean(mean_error[0])
-	print np.mean(mean_error[1])
-	print np.mean(mean_error[2])
-	print np.mean(mean_error[3])
+	print str(np.mean(mean_error[0])) + " - " +  str(np.std(mean_error[0]))
+	print str(np.mean(mean_error[1])) + " - " +  str(np.std(mean_error[1]))
+	print str(np.mean(mean_error[2])) + " - " +  str(np.std(mean_error[2]))
+	print str(np.mean(mean_error[3])) + " - " +  str(np.std(mean_error[3]))
 	print " "
 
 	print "hit rate for floor MLP"
-	print np.mean(hit_rate_floor_mlp[0])
-	print np.mean(hit_rate_floor_mlp[1])
-	print np.mean(hit_rate_floor_mlp[2])
-	print np.mean(hit_rate_floor_mlp[3])
-	
+	print str(np.mean(hit_rate_floor_mlp[0])) + " - " + str(np.mean(hit_rate_floor_mlp[0]))
+	print np.mean(hit_rate_floor_mlp[1]) + " - " + str(np.mean(hit_rate_floor_mlp[1]))
+	print np.mean(hit_rate_floor_mlp[2]) + " - " + str(np.mean(hit_rate_floor_mlp[2]))
+	print np.mean(hit_rate_floor_mlp[3]) + " - " + str(np.mean(hit_rate_floor_mlp[3]))
+
 #---------------------------------------------------------------------------------------------------------------
 def main():
 
