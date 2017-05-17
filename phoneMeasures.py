@@ -330,10 +330,10 @@ def KFold(k, und_df_phone):
 	print " "
 
 	print "hit rate for floor MLP"
-	print str(np.mean(hit_rate_floor_mlp[0])) + " - " + str(np.mean(hit_rate_floor_mlp[0]))
-	print str(np.mean(hit_rate_floor_mlp[1])) + " - " + str(np.mean(hit_rate_floor_mlp[1]))
-	print str(np.mean(hit_rate_floor_mlp[2])) + " - " + str(np.mean(hit_rate_floor_mlp[2]))
-	print str(np.mean(hit_rate_floor_mlp[3])) + " - " + str(np.mean(hit_rate_floor_mlp[3]))
+	print str(np.mean(hit_rate_floor_mlp[0])) + " - " + str(np.std(hit_rate_floor_mlp[0]))
+	print str(np.mean(hit_rate_floor_mlp[1])) + " - " + str(np.std(hit_rate_floor_mlp[1]))
+	print str(np.mean(hit_rate_floor_mlp[2])) + " - " + str(np.std(hit_rate_floor_mlp[2]))
+	print str(np.mean(hit_rate_floor_mlp[3])) + " - " + str(np.std(hit_rate_floor_mlp[3]))
 
 #---------------------------------------------------------------------------------------------------------------
 def main():
