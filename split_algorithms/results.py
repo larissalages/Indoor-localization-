@@ -55,3 +55,17 @@ print str(np.mean(mean_error_svr[1])) + " - " +  str(np.std(mean_error_svr[1]))
 print str(np.mean(mean_error_svr[2])) + " - " +  str(np.std(mean_error_svr[2]))
 print str(np.mean(mean_error_svr[3])) + " - " +  str(np.std(mean_error_svr[3]))
 print " "
+#-------------------------------------------------------------------------------------------------
+media = []
+for i in range(4):
+	media.append( np.mean(real_hit_rate_knn[i]) )
+
+import plotly.plotly as py
+import plotly.graph_objs as go
+
+data = [go.Bar(
+            x=['A', 'B', 'C', 'D'],
+            y= media
+    )]
+
+py.plot(data, filename='basic-bar')
