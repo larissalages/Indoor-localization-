@@ -32,10 +32,11 @@ def haversine(lon1, lat1, lon2, lat2):
 def regression_allset(Y_test_lon,Y_test_lat,X_test,ml_lon,ml_lat): #Only for tests
                               					
 	#Turn into list
-	predicts_lon = ml_lon.predict(X_test)
-	predicts_lat = ml_lat.predict(X_test)
+	predicts_lon = ml_lon.predict(X_test).tolist()
+	predicts_lat = ml_lat.predict(X_test).tolist()
 
-
+	Y_test_lon = Y_test_lon.values.tolist()
+	Y_test_lat = Y_test_lat.values.tolist()
 
 	error = []
 
@@ -64,7 +65,7 @@ def regression_allset(Y_test_lon,Y_test_lat,X_test,ml_lon,ml_lat): #Only for tes
 		error.append(distance)	
 
 	
-	return np.mean(error),predicts_lon,predicts_lat, error
+	return np.mean(error), error
 #--------------------------------------------------------------------------------------------------------------
 #Calculate how many measurements each cell phone has
 def show_number_measurements(grouped_df):
