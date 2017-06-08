@@ -32,11 +32,10 @@ def haversine(lon1, lat1, lon2, lat2):
 def regression_allset(Y_test_lon,Y_test_lat,X_test,ml_lon,ml_lat): #Only for tests
                               					
 	#Turn into list
-	predicts_lon = ml_lon.predict(X_test).tolist()
-	predicts_lat = ml_lat.predict(X_test).tolist()
+	predicts_lon = ml_lon.predict(X_test)
+	predicts_lat = ml_lat.predict(X_test)
 
-	Y_test_lon = Y_test_lon.values.tolist()
-	Y_test_lat = Y_test_lat.values.tolist()
+
 
 	error = []
 
@@ -65,7 +64,7 @@ def regression_allset(Y_test_lon,Y_test_lat,X_test,ml_lon,ml_lat): #Only for tes
 		error.append(distance)	
 
 	
-	return np.mean(error)
+	return np.mean(error),predicts_lon,predicts_lat, error
 #--------------------------------------------------------------------------------------------------------------
 #Calculate how many measurements each cell phone has
 def show_number_measurements(grouped_df):
@@ -208,16 +207,19 @@ def KFold(k, und_df_phone):
 
 	#und_df_phone = shuffle(und_df_phone)
 	phone = []
+	error = []
 	
 	#split the data frame of each smartphone
 	for j in range(len(und_df_phone)): 
 		phone.append(np.array_split(und_df_phone[j],k)) #the first dimension of "phone" is each phone, the second is the splits data frames from that smatphone
 
 	#GridSearch	
-	model = SVR(kernel = 'sigmoid' )
-	Cs = [0.1,1,10,100]
-	svr_lon= GridSearchCV(estimator=model, param_grid=dict(C = Cs),n_jobs=6) #GRID
-	svr_lat = GridSearchCV(estimator=model, param_grid=dict(C = Cs),n_jobs=6) #GRID
+#	model = SVR(kernel = 'sigmoid' )
+#	Cs = [0.1,1,10,100]
+#	svr_lon= GridSearchCV(estimator=model, param_grid=dict(C = Cs),n_jobs=6) #GRID
+#	svr_lat = GridSearchCV(estimator=model, param_grid=dict(C = Cs),n_jobs=6) #GRID
+	svr_lon = SVR(kernel = 'rbf', C= 256, gamma= 8)
+	svr_lat = SVR(kernel= 'rbf', C= 64, gamma= 8)
 
 	#creating a empty list with size len(und_df_phone)
 	mean_error_svr = init_list_of_objects(len(und_df_phone))
@@ -250,25 +252,31 @@ def KFold(k, und_df_phone):
 			Y_test_lon = test[j]['LONGITUDE']
 			Y_test_lat = test[j]['LATITUDE']	
 
+			m_error, erro = regression_allset(Y_test_lon,Y_test_lat,data_test,svr_lon,svr_lat)
 
-			mean_error_svr[j].append( regression_allset(Y_test_lon,Y_test_lat,data_test,svr_lon,svr_lat) )
+			if(i==0):
+				error.append(erro)
+
+			mean_error_svr[j].append( m_error )
 
 
-	np.save("mean_error_svr.npy", mean_error_svr)		
+	np.save("mean_error_svr.npy", mean_error_svr)
+	np.save("error_svr.npy", error)
+
 	print "mean error regression SVR"
 	print str(np.mean(mean_error_svr[0])) + " - " +  str(np.std(mean_error_svr[0]))
 	print str(np.mean(mean_error_svr[1])) + " - " +  str(np.std(mean_error_svr[1]))
 	print str(np.mean(mean_error_svr[2])) + " - " +  str(np.std(mean_error_svr[2]))
 	print str(np.mean(mean_error_svr[3])) + " - " +  str(np.std(mean_error_svr[3]))
 	print " "
-
+"""
 	print "Best Params Lon"
 	print svr_lon.best_params_
 
 
 	print "Best Params Lat"
 	print svr_lat.best_params_
-
+"""
 #---------------------------------------------------------------------------------------------------------------
 def main():
 

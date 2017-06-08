@@ -64,7 +64,7 @@ def regression_allset(Y_test_lon,Y_test_lat,X_test,ml_lon,ml_lat): #Only for tes
 		error.append(distance)	
 
 	
-	return np.mean(error)
+	return np.mean(error), error
 #--------------------------------------------------------------------------------------------------------------
 #Calculate how many measurements each cell phone has
 def show_number_measurements(grouped_df):
@@ -207,6 +207,7 @@ def KFold(k, und_df_phone):
 
 	#und_df_phone = shuffle(und_df_phone)
 	phone = []
+	error = []
 	
 	#split the data frame of each smartphone
 	for j in range(len(und_df_phone)): 
@@ -250,11 +251,20 @@ def KFold(k, und_df_phone):
 			Y_test_lon = test[j]['LONGITUDE']
 			Y_test_lat = test[j]['LATITUDE']	
 
+			if(i==0): #k==0
+				mean_error, erro = regression_allset(Y_test_lon,Y_test_lat,data_test,knn_lon,knn_lat)
+				error.append( erro )				
+			else:
+				mean_error = regression_allset(Y_test_lon,Y_test_lat,data_test,knn_lon,knn_lat)	
 
-			mean_error_knn[j].append( regression_allset(Y_test_lon,Y_test_lat,data_test,knn_lon,knn_lat) )
+			mean_error_knn[j].append( mean_error )
 
 
-	np.save("mean_error_knn.npy", mean_error_knn)		
+
+#	np.save("mean_error_knn.npy", mean_error_knn)
+	print np.mean(error)
+	np.save("error_knn.npy", error)	
+"""	
 	print "mean error regression knn"
 	print str(np.mean(mean_error_knn[0])) + " - " +  str(np.std(mean_error_knn[0]))
 	print str(np.mean(mean_error_knn[1])) + " - " +  str(np.std(mean_error_knn[1]))
@@ -269,7 +279,7 @@ def KFold(k, und_df_phone):
 	print "Best Params Lat"
 	print knn_lat.best_params_
 
-
+"""
 
 #---------------------------------------------------------------------------------------------------------------
 def main():

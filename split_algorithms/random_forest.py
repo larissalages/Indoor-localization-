@@ -65,7 +65,7 @@ def regression_allset(Y_test_lon,Y_test_lat,X_test,ml_lon,ml_lat): #Only for tes
 		error.append(distance)	
 
 	
-	return np.mean(error),predicts_lon,predicts_lat
+	return np.mean(error),predicts_lon,predicts_lat, error
 #--------------------------------------------------------------------------------------------------------------
 #Calculate how many measurements each cell phone has
 def show_number_measurements(grouped_df):
@@ -160,6 +160,7 @@ def KFold(k, und_df_phone):
 
 	#und_df_phone = shuffle(und_df_phone)
 	phone = []
+	error = []
 	
 	#split the data frame of each smartphone
 	for j in range(len(und_df_phone)): 
@@ -202,8 +203,12 @@ def KFold(k, und_df_phone):
 			Y_test_lon = test[j]['LONGITUDE'].fillna(0).as_matrix().astype(float)
 			Y_test_lat = test[j]['LATITUDE'].fillna(0).as_matrix().astype(float)
 
-			error, pred_lon, pred_lat = regression_allset(Y_test_lon,Y_test_lat,data_test,lon,lat)
-			mean_error[j].append( error )
+			m_error, pred_lon, pred_lat, erro = regression_allset(Y_test_lon,Y_test_lat,data_test,lon,lat)
+
+			if(i==0):
+				error.append(erro)
+			
+			mean_error[j].append( m_error )
 			list_pred_lon[j].append(pred_lon)
 			list_pred_lat[j].append(pred_lat)
 
@@ -211,6 +216,7 @@ def KFold(k, und_df_phone):
 	np.save("pred_lon.npy", list_pred_lon)
 	np.save("pred_lat.npy", list_pred_lat)			
 	np.save("mean_error_RandomForest.npy", mean_error)
+	np.save("error_rf.npy", error)
 
 	print "mean error regression RandomForest"
 	print str(np.mean(mean_error[0])) + " - " +  str(np.std(mean_error[0]))
