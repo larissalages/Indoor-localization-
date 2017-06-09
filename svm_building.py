@@ -11,7 +11,7 @@ from pyproj import Proj
 from math import radians, cos, sin, asin, sqrt
 from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVR
-
+from sklearn.svm import SVC
 
 def haversine(lon1, lat1, lon2, lat2):
     """
@@ -35,8 +35,8 @@ def regression_allset(train,test,method): #Only for tests
 		ml_lon = KNeighborsRegressor(n_neighbors=5, weights = 'distance')
 		ml_lat = KNeighborsRegressor(n_neighbors=5, weights = 'distance')
 	elif(method==2):
-		ml_lon = SVR(C=1.0, epsilon=0.2)
-		ml_lat = SVR(C=1.0, epsilon=0.2)
+		ml_lon = SVR(C=1.0, epsilon=0.2,kernel='linear')
+		ml_lat = SVR(C=1.0, epsilon=0.2,kernel='linear')
 			
 	X_train = train.ix[:,0:519]
 	Y_train_lon = train['LONGITUDE']
@@ -372,18 +372,16 @@ def KFold(k, und_df_phone):
 	for j in range(len(und_df_phone)): 
 		phone.append(np.array_split(und_df_phone[j],k)) #the first dimension of "phone" is each phone, the second is the splits data frames from that smatphone
 
-	knn = KNeighborsClassifier(n_neighbors=5, weights = 'distance')
-	mlp = MLPClassifier(solver='sgd',learning_rate = 'invscaling',verbose='true',activation='tanh')
-	
+	#GridSearch	
+	model = SVC()
+	kernels = ['linear', 'poly', 'rbf', 'sigmoid']
+	degrees = [3,5,7]
+	Cs = [0.1,1,10,100]
+	svm_building= GridSearchCV(estimator=model, param_grid=dict(kernel=kernels,degree = degrees,C = Cs),n_jobs=4) #GRID
+
 
 	#creating a empty list with size len(und_df_phone)
-	hit_rate_build_knn = init_list_of_objects(len(und_df_phone)) 
-	hit_rate_floor_knn = init_list_of_objects(len(und_df_phone))
-	hit_rate_build_mlp = init_list_of_objects(len(und_df_phone))
-	hit_rate_floor_mlp = init_list_of_objects(len(und_df_phone)) 
-	mean_error_knn = init_list_of_objects(len(und_df_phone))
-	mean_error_mlp = init_list_of_objects(len(und_df_phone))
-	mean_error_svr = init_list_of_objects(len(und_df_phone))
+	hit_rate_build_svm = init_list_of_objects(len(und_df_phone))
 
 	for i in range(k):
 		#separate each smartphone's data frame in test and train
@@ -396,13 +394,12 @@ def KFold(k, und_df_phone):
 				if x != i:
 					train = pd.concat([train,phone[j][x]])	
 		
-		#Training KNN, with total training set				
+		#Training with total training set				
 		data_train = train.ix[:,0:519]
 		target_train_build= train['BUILDINGID']
 
-		#knn - training		
-		knn.fit(data_train,target_train_build)
-#		mlp.fit(data_train, target_train)
+		#Training		
+		svm_building.fit(data_train,target_train_build)
 
 		#test all phones
 		for j in range(len(und_df_phone)):
@@ -410,44 +407,19 @@ def KFold(k, und_df_phone):
 			data_test = test[j].ix[:,0:519] 
 			target_test_build = test[j]['BUILDINGID']
 
-			#predictions and scores for each smartphone (predictions about building)
-			predictions_knn = knn.predict(data_test)
-#			predictions_mlp = mlp.predict(data_test)
 			#classification for building 
-			hit_rate_build_knn[j].append(knn.score(data_test , target_test_build))
-#			hit_rate_build_mlp[j].append(mlp.score(data_test , target_test)) 
-			#classification for floor
-			hit_rate, predictions_floor_knn = floor_classifier(predictions_knn,train,test[j],1)
-			hit_rate_floor_knn[j].append( hit_rate )
-#			hit_rate_floor_mlp[j].append( floor_classifier(predictions_mlp,train,test[j],2) )
-			#regression to found latitude and longitude
-			#mean_error_knn[j].append(coord_regression(predictions_knn,predictions_floor_knn,train,test[j],1))
-#			mean_error_knn[j].append(regression_subset(predictions_knn,train,test[j],1))
-			mean_error_knn[j].append( regression_allset(train,test[j],1) )
-#			mean_error_mlp[j].append(regression_subset(predictions_mlp,train,test[j],2))
-			mean_error_svr[j].append( regression_allset(train,test[j],2) )
-			predictions_knn = []
+			hit_rate_build_svm[j].append(svm_building.score(data_test , target_test_build))
 
-	print "mean error regression knn"
-	print str(np.mean(mean_error_knn[0])) + " - " +  str(np.std(mean_error_knn[0]))
-	print str(np.mean(mean_error_knn[1])) + " - " +  str(np.std(mean_error_knn[1]))
-	print str(np.mean(mean_error_knn[2])) + " - " +  str(np.std(mean_error_knn[2]))
-	print str(np.mean(mean_error_knn[3])) + " - " +  str(np.std(mean_error_knn[3]))
-	print " "
-
-	print "mean error regression SVR"
-	print str(np.mean(mean_error_svr[0])) + " - " +  str(np.std(mean_error_svr[0]))
-	print str(np.mean(mean_error_svr[1])) + " - " +  str(np.std(mean_error_svr[1]))
-	print str(np.mean(mean_error_svr[2])) + " - " +  str(np.std(mean_error_svr[2]))
-	print str(np.mean(mean_error_svr[3])) + " - " +  str(np.std(mean_error_svr[3]))
+	np.save("hit_rate_build_svm.npy",hit_rate_build_svm)		
+	print "hit rate building SVM"
+	print str(np.mean(hit_rate_build_svm[0])) + " - " +  str(np.std(hit_rate_build_svm[0]))
+	print str(np.mean(hit_rate_build_svm[1])) + " - " +  str(np.std(hit_rate_build_svm[1]))
+	print str(np.mean(hit_rate_build_svm[2])) + " - " +  str(np.std(hit_rate_build_svm[2]))
+	print str(np.mean(hit_rate_build_svm[3])) + " - " +  str(np.std(hit_rate_build_svm[3]))
 	print " "			
-"""
-	print "mean error regression MLP"
-	print str(np.mean(mean_error_mlp[0])) + " - " + str(np.std(mean_error_mlp[0]))
-	print str(np.mean(mean_error_mlp[1])) + " - " + str(np.std(mean_error_mlp[1]))
-	print str(np.mean(mean_error_mlp[2])) + " - " + str(np.std(mean_error_mlp[2]))
-	print str(np.mean(mean_error_mlp[3])) + " - " + str(np.std(mean_error_mlp[3]))
-"""
+
+	print "Best Params"
+	print svm_building.best_params_
 
 #---------------------------------------------------------------------------------------------------------------
 def main():

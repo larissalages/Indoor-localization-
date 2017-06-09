@@ -37,10 +37,20 @@ def regression_allset(train,test,method): #Only for tests
 	elif(method==2):
 		ml_lon = SVR(C=1.0, epsilon=0.2)
 		ml_lat = SVR(C=1.0, epsilon=0.2)
-			
+	elif(method==3):
+		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5)		
+		#machine_learn = MLPClassifier(solver='sgd',learning_rate = 'adaptive',verbose='false',activation='tanh',alpha=1e-5,max_iter=400) #THE BEST
+		#machine_learn = MLPClassifier(hidden_layer_sizes=(100,5), solver='sgd',learning_rate = 'adaptive',verbose='true',activation='tanh',alpha=1e-5,max_iter=500)
+		model = MLPClassifier(learning_rate = 'adaptive',activation='logistic')
+		solvers = ['lbfgs', 'sgd', 'adam']
+		random_states = [0,2,4,6,8,9]
+		max_its = [200,400,600]
+		ml_lon = GridSearchCV(estimator=model, param_grid=dict(max_iter=max_its,solver=solvers,random_state=random_states)) #GRID
+		ml_lat = GridSearchCV(estimator=model, param_grid=dict(max_iter=max_its,solver=solvers,random_state=random_states),n_jobs=7) #GRID					
+
 	X_train = train.ix[:,0:519]
-	Y_train_lon = train['LONGITUDE']
-	Y_train_lat = train['LATITUDE']
+	Y_train_lon = np.asarray(train['LONGITUDE'], dtype="|S6")
+	Y_train_lat = np.asarray(train['LATITUDE'], dtype="|S6")
 
 	ml_lon.fit(X_train,Y_train_lon) 
 	ml_lat.fit(X_train,Y_train_lat)                                   
@@ -411,30 +421,40 @@ def KFold(k, und_df_phone):
 			target_test_build = test[j]['BUILDINGID']
 
 			#predictions and scores for each smartphone (predictions about building)
-			predictions_knn = knn.predict(data_test)
+#			predictions_knn = knn.predict(data_test)
 #			predictions_mlp = mlp.predict(data_test)
 			#classification for building 
-			hit_rate_build_knn[j].append(knn.score(data_test , target_test_build))
+#			hit_rate_build_knn[j].append(knn.score(data_test , target_test_build))
 #			hit_rate_build_mlp[j].append(mlp.score(data_test , target_test)) 
 			#classification for floor
-			hit_rate, predictions_floor_knn = floor_classifier(predictions_knn,train,test[j],1)
-			hit_rate_floor_knn[j].append( hit_rate )
+#			hit_rate, predictions_floor_knn = floor_classifier(predictions_knn,train,test[j],1)
+#			hit_rate_floor_knn[j].append( hit_rate )
 #			hit_rate_floor_mlp[j].append( floor_classifier(predictions_mlp,train,test[j],2) )
 			#regression to found latitude and longitude
 			#mean_error_knn[j].append(coord_regression(predictions_knn,predictions_floor_knn,train,test[j],1))
 #			mean_error_knn[j].append(regression_subset(predictions_knn,train,test[j],1))
-			mean_error_knn[j].append( regression_allset(train,test[j],1) )
-#			mean_error_mlp[j].append(regression_subset(predictions_mlp,train,test[j],2))
-			mean_error_svr[j].append( regression_allset(train,test[j],2) )
+#			mean_error_knn[j].append( regression_allset(train,test[j],1) )
+			mean_error_mlp[j].append(regression_allset(train,test[j],3))
+#			mean_error_svr[j].append( regression_allset(train,test[j],2) )
 			predictions_knn = []
 
+	np.save("error_mlp.npy",mean_error_mlp)
+	print "mean error regression MLP"
+	print str(np.mean(mean_error_mlp[0])) + " - " + str(np.std(mean_error_mlp[0]))
+	print str(np.mean(mean_error_mlp[1])) + " - " + str(np.std(mean_error_mlp[1]))
+	print str(np.mean(mean_error_mlp[2])) + " - " + str(np.std(mean_error_mlp[2]))
+	print str(np.mean(mean_error_mlp[3])) + " - " + str(np.std(mean_error_mlp[3]))
+
+
+"""
 	print "mean error regression knn"
 	print str(np.mean(mean_error_knn[0])) + " - " +  str(np.std(mean_error_knn[0]))
 	print str(np.mean(mean_error_knn[1])) + " - " +  str(np.std(mean_error_knn[1]))
 	print str(np.mean(mean_error_knn[2])) + " - " +  str(np.std(mean_error_knn[2]))
 	print str(np.mean(mean_error_knn[3])) + " - " +  str(np.std(mean_error_knn[3]))
 	print " "
-
+"""
+"""
 	print "mean error regression SVR"
 	print str(np.mean(mean_error_svr[0])) + " - " +  str(np.std(mean_error_svr[0]))
 	print str(np.mean(mean_error_svr[1])) + " - " +  str(np.std(mean_error_svr[1]))
@@ -442,12 +462,8 @@ def KFold(k, und_df_phone):
 	print str(np.mean(mean_error_svr[3])) + " - " +  str(np.std(mean_error_svr[3]))
 	print " "			
 """
-	print "mean error regression MLP"
-	print str(np.mean(mean_error_mlp[0])) + " - " + str(np.std(mean_error_mlp[0]))
-	print str(np.mean(mean_error_mlp[1])) + " - " + str(np.std(mean_error_mlp[1]))
-	print str(np.mean(mean_error_mlp[2])) + " - " + str(np.std(mean_error_mlp[2]))
-	print str(np.mean(mean_error_mlp[3])) + " - " + str(np.std(mean_error_mlp[3]))
-"""
+
+
 
 #---------------------------------------------------------------------------------------------------------------
 def main():
