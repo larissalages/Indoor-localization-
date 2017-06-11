@@ -149,24 +149,21 @@ friedman.test.with.post.hoc <- function(formu, data, to.print.friedman = T, to.p
 #-----------------------------------------------------------------------------------------------------------------
 require(PMCMR)
 
-knn = read.table("data_class_knn.txt")
-rf = read.table("data_class_rf.txt")
-svm = read.table("data_class_svm.txt")
+cel0 = read.table("data_reg_cel0.txt")
+cel1 = read.table("data_reg_cel1.txt")
+cel2 = read.table("data_reg_cel2.txt")
+cel3 = read.table("data_reg_cel3.txt")
 
-shapiro.test(rf$V1)
+s<- shapiro.test(cel1$V1)
 
-knn_l <- knn$V1
-rf_l <- rf$V1
-svm_l <- svm$V1
+cel0 <- cel0$V1
+cel1 <- cel1$V1
+cel2 <- cel2$V1
+cel3 <- cel3$v1
 
-data_rf_knn <- cbind(rf_l,knn_l)
-data_rf_svm <- cbind(rf_l,svm_l)
-all <- cbind(rf_l,knn_l,svm_l)
+all <- cbind(cel0,cel1,cel2,cel3)
 
-z1 <- friedman.test(data_rf_knn)
-z2 <- friedman.test(data_rf_svm)
 za <- friedman.test(all)
 
-z11 <- posthoc.friedman.nemenyi.test(data_rf_knn)
 
 zaa <- posthoc.friedman.nemenyi.test(all)
