@@ -149,21 +149,30 @@ friedman.test.with.post.hoc <- function(formu, data, to.print.friedman = T, to.p
 #-----------------------------------------------------------------------------------------------------------------
 require(PMCMR)
 
-cel0 = read.table("data_reg_cel0.txt")
-cel1 = read.table("data_reg_cel1.txt")
-cel2 = read.table("data_reg_cel2.txt")
-cel3 = read.table("data_reg_cel3.txt")
+cel0 = read.table("data_class_cel0.txt")
+cel1 = read.table("data_class_cel1.txt")
+cel2 = read.table("data_class_cel2.txt")
+cel3 = read.table("data_class_cel3.txt")
 
 s<- shapiro.test(cel1$V1)
 
 cel0 <- cel0$V1
 cel1 <- cel1$V1
 cel2 <- cel2$V1
-cel3 <- cel3$v1
+cel3 <- cel3$V1
 
-all <- cbind(cel0,cel1,cel2,cel3)
-
+part1 <- cbind(cel0,cel1)
+part2 <-cbind(cel2,cel3)
+all <- cbind(part1,part2)
+print(all)
 za <- friedman.test(all)
+print("friedman test")
+print(za)
 
 
 zaa <- posthoc.friedman.nemenyi.test(all)
+
+print("nemenyi test")
+print(zaa)
+
+
